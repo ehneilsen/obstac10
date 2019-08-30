@@ -1,0 +1,10 @@
+setupRequired(python)
+
+#setupRequired(Architect)
+#setupRequired(Scripts)
+#setupRequired(DB)
+
+#setupRequired(Site,fnalprd)
+
+pathPrepend(PATH, ${PRODUCT_DIR}/bin)
+pathPrepend(PYTHONPATH, ${PRODUCT_DIR}/python)

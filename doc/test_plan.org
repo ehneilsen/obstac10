@@ -1,0 +1,142 @@
+#+TITLE:     Test plan for initial installation of =obstac= 10
+#+AUTHOR:    Eric H. Neilsen, Jr.
+#+EMAIL:     neilsen@fnal.gov
+#+OPTIONS: H:2 toc:nil \n:nil @:t ::t |:t ^:{} _:{} *:t TeX:t LaTeX:t
+
+* DONE Tag the new version of obstac
+
+As user =codemanager=:
+#+BEGIN_SRC sh 
+setenv NEW_OBSTAC_VERSION 10.0.0
+setup des_install
+setup python
+des_tag obstac trunk ${NEW_OBSTAC_VERSION}
+#+END_SRC
+
+* DONE Install =obstac= using eups, but do not declare it current.
+
+As user =codemanager=:
+#+BEGIN_SRC sh 
+des_install obstac ${NEW_OBSTAC_VERSION}
+#+END_SRC
+
+#+BEGIN_EXAMPLE
+[codemanager@observer2 ~]$ des_install obstac ${NEW_OBSTAC_VERSION}
+Installing obstac 10.0.0 to /usr/remote/software/products.
+svn export --non-interactive --trust-server-cert svn+ssh://p-sispi@cdcvs.fnal.gov/cvs/projects/sispi/obstac/tags/10.0.0 /usr/remote/software/products/obstac-10.0.0
+A    /usr/remote/software/products/obstac-10.0.0
+A    /usr/remote/software/products/obstac-10.0.0/python
+A    /usr/remote/software/products/obstac-10.0.0/python/YannyReader.py
+A    /usr/remote/software/products/obstac-10.0.0/python/obstac
+A    /usr/remote/software/products/obstac-10.0.0/python/obstac/Instrument.py
+A    /usr/remote/software/products/obstac-10.0.0/python/obstac/ExampleScheduler.py
+A    /usr/remote/software/products/obstac-10.0.0/python/obstac/Scheduler.py
+A    /usr/remote/software/products/obstac-10.0.0/python/obstac/__init__.py
+A    /usr/remote/software/products/obstac-10.0.0/python/obstac/nodebug.py
+A    /usr/remote/software/products/obstac-10.0.0/python/obstac/debug.py
+A    /usr/remote/software/products/obstac-10.0.0/python/autoobs
+A    /usr/remote/software/products/obstac-10.0.0/python/autoobs/AutoObs.py
+A    /usr/remote/software/products/obstac-10.0.0/python/autoobs/autoobs.py
+A    /usr/remote/software/products/obstac-10.0.0/samples
+A    /usr/remote/software/products/obstac-10.0.0/samples/obstac_test.ini
+A    /usr/remote/software/products/obstac-10.0.0/samples/fnal_setup.ini
+A    /usr/remote/software/products/obstac-10.0.0/doc
+A    /usr/remote/software/products/obstac-10.0.0/doc/test_plan.org
+A    /usr/remote/software/products/obstac-10.0.0/doc/obstac.txt
+A    /usr/remote/software/products/obstac-10.0.0/ups
+A    /usr/remote/software/products/obstac-10.0.0/ups/obstac.table
+A    /usr/remote/software/products/obstac-10.0.0/bin
+A    /usr/remote/software/products/obstac-10.0.0/bin/example_scheduler
+A    /usr/remote/software/products/obstac-10.0.0/bin/autoobs
+A    /usr/remote/software/products/obstac-10.0.0/README.txt
+A    /usr/remote/software/products/obstac-10.0.0/etc
+A    /usr/remote/software/products/obstac-10.0.0/etc/example_scheduler.conf
+Exported revision 11615.
+Making /usr/remote/software/products/obstac-10.0.0 read-only, for your protection...
+Making bin executable
+chmod +x /usr/remote/software/products/obstac-10.0.0/bin/example_scheduler
+chmod +x /usr/remote/software/products/obstac-10.0.0/bin/autoobs
+eups declare obstac 10.0.0 -F -r /usr/remote/software/products/obstac-10.0.0 -f generic
+[codemanager@observer2 ~]$ 
+
+#+END_EXAMPLE
+
+* DONE Create the necessary directories
+
+As user =sispi=:
+#+BEGIN_SRC sh
+mkdir -p /usr/remote/user/sispi/obstac/inbox
+mkdir -p /usr/remote/user/sispi/obstac/loaded
+mkdir -p /usr/remote/user/sispi/obstac/queue
+#+END_SRC
+
+* DONE Create a modified SISPI INI file with the new =obstac=
+
+ini files are here: =/usr/remote/user/sispi/decam/architectures/ctio=
+
+The current one is =DES.ini=
+
+Include this section, call it =eric.ini=:
+#+BEGIN_EXAMPLE
+   [[AUTOOBS]]
+    xterm = True
+    xterm_args = -hold, -iconic,
+    product = obstac
+    version = 10.0.0
+    keep = True
+    loglevel = DEBUG
+    application_name = autoobs
+    dependencies = OCS
+    obstac_inbox = /usr/remote/user/sispi/obstac/inbox/queue.json
+    obstac_loaded = /usr/remote/user/sispi/obstac/loaded
+    obstac_current_queue = /usr/remote/user/sispi/obstac/queue/current.json
+    obstac_previous_queue = /usr/remote/user/sispi/obstac/queue/previous.json
+    obstac_inprogress = /usr/remote/user/sispi/obstac/queue/inprogress.json
+    obstac_fifo = /tmp/obstac_fifo.txt
+#+END_EXAMPLE
+
+Remove =OBSTACSRVR= and =OBSTACWEB= roles.
+
+Make sure you put the =AUTOOBS= role on the same node you will run the
+scheduler on (=observer2=), and that =obstac_fifo= points to a location local to
+that node (not NFS mounted).
+
+* TODO Restart SISPI
+Restart SISPI using the =eric.ini= ini file instead of the default. It should start up smoothly.
+* TODO Do some sample test exposures without obstac
+** Take some exposures by hand
+Just verify that this works, and nothing unexpected happens.
+** Load and run a =SISPI= script
+Just verify that this works, and nothing unexpected happens.
+** Check the contents of the the obstac queue and in progress files
+ - =/usr/remote/user/sispi/obstac/queue/current.json=
+ - =/usr/remote/user/sispi/obstac/queue/previous.json=
+ - =/usr/remote/user/sispi/obstac/queue/inprogress.json=
+* TODO Test observing with an =obstac= scheduler
+** Start the example scheduler
+As user =sispi=:
+#+BEGIN_SRC sh
+setup obstac 10.0.0
+example_scheduler /usr/remote/user/sispi/obstac/example_scheduler.conf
+#+END_SRC
+** Enable =autoobs=
+The example scheduler should add exposures to the queue until it is 5
+exposures long.
+** Observe!
+The example scheduler should add new exposures to the queue as
+necessary to keep the queue 5 exposures long.
+** Disable =autoobs=
+When =autoobs= is disabled, the scheduler should not be able to do
+anything to the queue.
+** Empty the queue
+Verify that the scheduler does not do anything.
+** Take an exposure or two by hand
+Verify that the scheduler does not do anything.
+* TODO Declare the new obstac current if successful
+As user =codemanager=
+#+BEGIN_SRC sh
+setenv NEW_OBSTAC_VERSION 10.0.0
+eups declare -c obstac ${NEW_OBSTAC_VERSION}
+#+END_SRC
+
+and remove the obstac "version" specification from the =SISPI INI= file.
